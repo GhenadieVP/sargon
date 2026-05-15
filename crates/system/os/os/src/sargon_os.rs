@@ -118,20 +118,22 @@ impl SargonOS {
     ) -> Result<()> {
         let (profile, bdfs) = self.create_new_profile_with_bdfs(mnemonic)?;
 
-        self.secure_storage
-            .save_private_hd_factor_source(&bdfs)
-            .await?;
+        self.set_profile(profile).await?;
 
-        let set_profile_result = self.set_profile(profile).await;
-        if let Some(error) = set_profile_result.err() {
-            self.secure_storage
-                .delete_mnemonic(&bdfs.factor_source.id)
-                .await?;
-            return Err(error);
+        if let Err(error) = self
+            .secure_storage
+            .save_private_hd_factor_source(&bdfs)
+            .await
+        {
+            warn!(
+                "Created new Profile, but failed to save default BDFS mnemonic: {}",
+                error
+            );
+        } else {
+            info!("Saved default BDFS mnemonic");
         }
 
-        info!("Saved new Profile and BDFS, finish creating wallet");
-
+        info!("Finished creating new wallet");
         Ok(())
     }
 
@@ -590,6 +592,111 @@ mod tests {
     #[allow(clippy::upper_case_acronyms)]
     type SUT = SargonOS;
 
+    #[derive(Debug)]
+    struct MnemonicWriteFailingSecureStorage {
+        inner: Arc<EphemeralSecureStorage>,
+    }
+
+    impl MnemonicWriteFailingSecureStorage {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                inner: EphemeralSecureStorage::new(),
+            })
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl SecureStorageDriver for MnemonicWriteFailingSecureStorage {
+        async fn load_data(
+            &self,
+            key: SecureStorageKey,
+        ) -> Result<Option<BagOfBytes>> {
+            self.inner.load_data(key).await
+        }
+
+        async fn save_data(
+            &self,
+            key: SecureStorageKey,
+            data: BagOfBytes,
+        ) -> Result<()> {
+            if matches!(
+                key,
+                SecureStorageKey::DeviceFactorSourceMnemonic { .. }
+            ) {
+                return Err(CommonError::SecureStorageWriteError {
+                    underlying: "Failed to write mnemonic".to_string(),
+                });
+            }
+
+            self.inner.save_data(key, data).await
+        }
+
+        async fn delete_data_for_key(
+            &self,
+            key: SecureStorageKey,
+        ) -> Result<()> {
+            self.inner.delete_data_for_key(key).await
+        }
+
+        async fn contains_data_for_key(
+            &self,
+            key: SecureStorageKey,
+        ) -> Result<bool> {
+            self.inner.contains_data_for_key(key).await
+        }
+    }
+
+    #[derive(Debug)]
+    struct ProfileWriteFailingSecureStorage {
+        inner: Arc<EphemeralSecureStorage>,
+    }
+
+    impl ProfileWriteFailingSecureStorage {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                inner: EphemeralSecureStorage::new(),
+            })
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl SecureStorageDriver for ProfileWriteFailingSecureStorage {
+        async fn load_data(
+            &self,
+            key: SecureStorageKey,
+        ) -> Result<Option<BagOfBytes>> {
+            self.inner.load_data(key).await
+        }
+
+        async fn save_data(
+            &self,
+            key: SecureStorageKey,
+            data: BagOfBytes,
+        ) -> Result<()> {
+            if matches!(key, SecureStorageKey::ProfileSnapshot { .. }) {
+                return Err(CommonError::SecureStorageWriteError {
+                    underlying: "Failed to write profile".to_string(),
+                });
+            }
+
+            self.inner.save_data(key, data).await
+        }
+
+        async fn delete_data_for_key(
+            &self,
+            key: SecureStorageKey,
+        ) -> Result<()> {
+            self.inner.delete_data_for_key(key).await
+        }
+
+        async fn contains_data_for_key(
+            &self,
+            key: SecureStorageKey,
+        ) -> Result<bool> {
+            self.inner.contains_data_for_key(key).await
+        }
+    }
+
     #[actix_rt::test]
     async fn test_new_profile_is_active_profile() {
         // ARRANGE (and ACT)
@@ -711,6 +818,56 @@ mod tests {
             );
             rust_logger_log_at_every_level()
         });
+    }
+
+    #[actix_rt::test]
+    async fn test_new_wallet_fails_and_leaves_no_loaded_profile_when_profile_save_fails(
+    ) {
+        let secure_storage = ProfileWriteFailingSecureStorage::new();
+        let drivers = Drivers::with_secure_storage(secure_storage);
+        let mut clients = Clients::new(Bios::new(drivers));
+        clients.factor_instances_cache =
+            FactorInstancesCacheClient::in_memory();
+        let interactors = Interactors::new_from_clients(&clients);
+        let os =
+            SUT::boot_with_clients_and_interactor(clients, interactors).await;
+
+        let result = os.new_wallet().await;
+
+        assert!(matches!(
+            result,
+            Err(CommonError::SecureStorageWriteError { .. })
+        ));
+        assert!(os.profile().is_err());
+    }
+
+    #[actix_rt::test]
+    async fn test_new_wallet_succeeds_when_default_bdfs_mnemonic_save_fails() {
+        let secure_storage = MnemonicWriteFailingSecureStorage::new();
+        let drivers = Drivers::with_secure_storage(secure_storage);
+        let mut clients = Clients::new(Bios::new(drivers));
+        clients.factor_instances_cache =
+            FactorInstancesCacheClient::in_memory();
+        let interactors = Interactors::new_from_clients(&clients);
+        let os =
+            SUT::boot_with_clients_and_interactor(clients, interactors).await;
+
+        os.new_wallet().await.unwrap();
+
+        assert!(os.profile().is_ok());
+        let bdfs = os.bdfs();
+        assert!(os
+            .clients
+            .secure_storage
+            .load_mnemonic_with_passphrase(&bdfs.id)
+            .await
+            .is_err());
+        assert!(!os
+            .clients
+            .secure_storage
+            .contains_device_mnemonic(bdfs)
+            .await
+            .unwrap());
     }
 
     #[actix_rt::test]

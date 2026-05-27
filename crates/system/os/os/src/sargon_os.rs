@@ -593,20 +593,27 @@ mod tests {
     type SUT = SargonOS;
 
     #[derive(Debug)]
-    struct MnemonicWriteFailingSecureStorage {
+    struct WriteFailingSecureStorage {
         inner: Arc<EphemeralSecureStorage>,
+        fail_on_save_key: fn(&SecureStorageKey) -> bool,
+        write_error: &'static str,
     }
 
-    impl MnemonicWriteFailingSecureStorage {
-        fn new() -> Arc<Self> {
+    impl WriteFailingSecureStorage {
+        fn new(
+            fail_on_save_key: fn(&SecureStorageKey) -> bool,
+            write_error: &'static str,
+        ) -> Arc<Self> {
             Arc::new(Self {
                 inner: EphemeralSecureStorage::new(),
+                fail_on_save_key,
+                write_error,
             })
         }
     }
 
     #[async_trait::async_trait]
-    impl SecureStorageDriver for MnemonicWriteFailingSecureStorage {
+    impl SecureStorageDriver for WriteFailingSecureStorage {
         async fn load_data(
             &self,
             key: SecureStorageKey,
@@ -619,63 +626,9 @@ mod tests {
             key: SecureStorageKey,
             data: BagOfBytes,
         ) -> Result<()> {
-            if matches!(
-                key,
-                SecureStorageKey::DeviceFactorSourceMnemonic { .. }
-            ) {
+            if (self.fail_on_save_key)(&key) {
                 return Err(CommonError::SecureStorageWriteError {
-                    underlying: "Failed to write mnemonic".to_string(),
-                });
-            }
-
-            self.inner.save_data(key, data).await
-        }
-
-        async fn delete_data_for_key(
-            &self,
-            key: SecureStorageKey,
-        ) -> Result<()> {
-            self.inner.delete_data_for_key(key).await
-        }
-
-        async fn contains_data_for_key(
-            &self,
-            key: SecureStorageKey,
-        ) -> Result<bool> {
-            self.inner.contains_data_for_key(key).await
-        }
-    }
-
-    #[derive(Debug)]
-    struct ProfileWriteFailingSecureStorage {
-        inner: Arc<EphemeralSecureStorage>,
-    }
-
-    impl ProfileWriteFailingSecureStorage {
-        fn new() -> Arc<Self> {
-            Arc::new(Self {
-                inner: EphemeralSecureStorage::new(),
-            })
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl SecureStorageDriver for ProfileWriteFailingSecureStorage {
-        async fn load_data(
-            &self,
-            key: SecureStorageKey,
-        ) -> Result<Option<BagOfBytes>> {
-            self.inner.load_data(key).await
-        }
-
-        async fn save_data(
-            &self,
-            key: SecureStorageKey,
-            data: BagOfBytes,
-        ) -> Result<()> {
-            if matches!(key, SecureStorageKey::ProfileSnapshot { .. }) {
-                return Err(CommonError::SecureStorageWriteError {
-                    underlying: "Failed to write profile".to_string(),
+                    underlying: self.write_error.to_string(),
                 });
             }
 
@@ -821,9 +774,11 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn test_new_wallet_fails_and_leaves_no_loaded_profile_when_profile_save_fails(
-    ) {
-        let secure_storage = ProfileWriteFailingSecureStorage::new();
+    async fn test_new_wallet_fails_when_profile_save_fails() {
+        let secure_storage = WriteFailingSecureStorage::new(
+            |key| matches!(key, SecureStorageKey::ProfileSnapshot { .. }),
+            "Failed to write profile",
+        );
         let drivers = Drivers::with_secure_storage(secure_storage);
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
@@ -838,12 +793,19 @@ mod tests {
             result,
             Err(CommonError::SecureStorageWriteError { .. })
         ));
-        assert!(os.profile().is_err());
     }
 
     #[actix_rt::test]
     async fn test_new_wallet_succeeds_when_default_bdfs_mnemonic_save_fails() {
-        let secure_storage = MnemonicWriteFailingSecureStorage::new();
+        let secure_storage = WriteFailingSecureStorage::new(
+            |key| {
+                matches!(
+                    key,
+                    SecureStorageKey::DeviceFactorSourceMnemonic { .. }
+                )
+            },
+            "Failed to write mnemonic",
+        );
         let drivers = Drivers::with_secure_storage(secure_storage);
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =

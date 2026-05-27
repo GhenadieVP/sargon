@@ -47,10 +47,10 @@ impl SargonOS {
             })
             .await?;
         } else {
-            self.save_profile(&profile).await?;
             self.profile_state_holder.replace_profile_state_with(
                 ProfileState::Loaded(profile.clone()),
             )?;
+            self.save_existing_profile().await?;
 
             self.clients
                 .profile_state_change

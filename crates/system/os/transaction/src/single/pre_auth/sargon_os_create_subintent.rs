@@ -68,7 +68,7 @@ impl OSCreateSubintent for SargonOS {
             }
 
             // Get current epoch
-            let (gateway_client, network_id) = self.gateway_client_on()?;
+            let gateway_client = self.gateway_client();
             let current_epoch = gateway_client.current_epoch().await?;
 
             // Calculate header ranges
@@ -79,7 +79,7 @@ impl OSCreateSubintent for SargonOS {
 
             // Build header
             IntentHeaderV2 {
-                network_id,
+                network_id: self.current_network_id(),
                 start_epoch_inclusive: current_epoch,
                 end_epoch_exclusive: end_ranges.0,
                 min_proposer_timestamp_inclusive: None,

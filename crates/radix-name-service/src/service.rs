@@ -24,9 +24,10 @@ impl RadixNameService {
     fn new(
         networking_driver: Arc<dyn NetworkingDriver>,
         config: RadixNameServiceConfig,
-        network_id: NetworkID,
+        gateway: Gateway,
     ) -> Self {
-        let gateway_client = GatewayClient::new(networking_driver, network_id);
+        let gateway_client =
+            GatewayClient::with_networking_driver(networking_driver, gateway);
         Self {
             config,
             gateway_client,
@@ -35,14 +36,14 @@ impl RadixNameService {
 
     pub fn new_xrd_domains(
         networking_driver: Arc<dyn NetworkingDriver>,
-        network_id: NetworkID,
+        gateway: Gateway,
     ) -> Result<Self> {
-        match Self::xrd_domains_config().get(&network_id) {
+        match Self::xrd_domains_config().get(&gateway.network.id) {
             Some(config) => {
-                Ok(Self::new(networking_driver, config.clone(), network_id))
+                Ok(Self::new(networking_driver, config.clone(), gateway))
             }
             None => Err(CommonError::RnsUnsupportedNetwork {
-                network: network_id.discriminant(),
+                network: gateway.network.id.discriminant(),
             }),
         }
     }

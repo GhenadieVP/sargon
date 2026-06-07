@@ -18,7 +18,7 @@ impl OsTxSubmitting for SargonOS {
         &self,
         notarized_transaction: NotarizedTransaction,
     ) -> Result<TransactionIntentHash> {
-        let gateway_client = self.gateway_client()?;
+        let gateway_client = self.gateway_client();
 
         gateway_client
             .submit_notarized_transaction(notarized_transaction)

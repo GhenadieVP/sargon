@@ -16,11 +16,11 @@ impl OsMarkAsSecurified for SargonOS {
         &self,
         entity_addresses: IndexSet<AddressOfAccountOrPersona>,
     ) -> Result<()> {
-        let (gateway_client, network_id) = self.gateway_client_on()?;
+        let gateway_client = self.gateway_client();
 
         // Fetch ancestor addresses
         let badge_owner_per_entity = gateway_client
-            .fetch_entities_badge_owners(network_id, entity_addresses.clone())
+            .fetch_entities_badge_owners(entity_addresses.clone())
             .await?;
 
         self.update_profile_with(|profile| {

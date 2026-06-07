@@ -21,12 +21,10 @@ impl AccessControllerStateRepositoryClient {
     pub async fn fetch_access_controllers_details(
         &self,
         addresses: Vec<AccessControllerAddress>,
-        network_id: NetworkID,
+        gateway: Gateway,
     ) -> Result<Vec<AccessControllerStateDetails>> {
-        let gateway_client = GatewayClient::with_http_client(
-            self.http_client.clone(),
-            network_id,
-        );
+        let gateway_client =
+            GatewayClient::new(self.http_client.clone(), gateway);
         let details = gateway_client
             .fetch_access_controllers_details(addresses.clone())
             .await?;
@@ -67,14 +65,13 @@ mod tests {
             AccessControllerAddress::sample(),
             AccessControllerAddress::sample_other(),
         ];
-        let network_id = NetworkID::Mainnet;
         let expected_details = vec![
             AccessControllerStateDetails::sample(),
             AccessControllerStateDetails::sample_other(),
         ];
 
         let result = sut
-            .fetch_access_controllers_details(addresses, network_id)
+            .fetch_access_controllers_details(addresses, Gateway::mainnet())
             .await;
 
         pretty_assertions::assert_eq!(result.unwrap(), expected_details);

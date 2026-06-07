@@ -40,11 +40,6 @@ pub fn new_gateway_sample_other() -> Gateway {
 }
 
 #[uniffi::export]
-pub fn new_gateway_for_network_id(network_id: NetworkID) -> Gateway {
-    InternalGateway::from(network_id.into_internal()).into()
-}
-
-#[uniffi::export]
 pub fn gateway_mainnet() -> Gateway {
     InternalGateway::mainnet().into()
 }

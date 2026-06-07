@@ -76,9 +76,9 @@ mod tests_decode {
     type SUT = Parser;
 
     fn make_sut() -> SUT {
-        SUT::new(GatewayClient::new(
+        SUT::new(GatewayClient::with_networking_driver(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
         ))
     }
 
@@ -150,16 +150,16 @@ mod tests_transform {
                     details: None,
                 }],
             });
-        SUT::new(GatewayClient::new(
+        SUT::new(GatewayClient::with_networking_driver(
             Arc::new(mock_antenna),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
         ))
     }
 
     fn make_failing_sut() -> SUT {
-        SUT::new(GatewayClient::new(
+        SUT::new(GatewayClient::with_networking_driver(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
         ))
     }
 

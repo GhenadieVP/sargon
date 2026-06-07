@@ -39,7 +39,7 @@ impl OsAnalyseTxPreview for SargonOS {
         nonce: Nonce,
         notary_public_key: PublicKey,
     ) -> Result<TransactionToReview> {
-        let network_id = self.current_network_id()?;
+        let network_id = self.current_network_id();
         let transaction_manifest =
             TransactionManifest::new(instructions, network_id, blobs)?;
 
@@ -119,7 +119,7 @@ impl OsExecutionSummary for SargonOS {
             };
         let proofs = self.extract_proofs(&summary)?;
 
-        let gateway_client = self.gateway_client_with(manifest.network_id());
+        let gateway_client = self.gateway_client();
 
         let epoch = gateway_client.current_epoch().await?;
 

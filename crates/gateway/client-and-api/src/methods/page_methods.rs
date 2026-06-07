@@ -55,7 +55,10 @@ mod tests {
 
         let mock_driver =
             MockNetworkingDriver::new_with_responses(vec![response]);
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
         let account_address = AccountAddress::sample();
 
         let result = sut
@@ -90,7 +93,10 @@ mod tests {
             vec![response_one, response_two],
             spy_account_two_pages_requests(),
         );
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         let result = sut
             .load_all_pages(
@@ -150,7 +156,10 @@ mod tests {
     async fn failure() {
         // Test the case where the first page fails.
         let mock_driver = MockNetworkingDriver::new_always_failing();
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         let result = sut
             .load_all_pages(None, None, |cursor, _| {

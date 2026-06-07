@@ -40,25 +40,6 @@ impl Default for Gateway {
     }
 }
 
-impl From<NetworkID> for Gateway {
-    fn from(value: NetworkID) -> Self {
-        match value {
-            NetworkID::Mainnet => Self::mainnet(),
-            NetworkID::Stokenet => Self::stokenet(),
-            NetworkID::Nebunet => Self::nebunet(),
-            NetworkID::Kisharnet => Self::kisharnet(),
-            NetworkID::Ansharnet => Self::ansharnet(),
-            NetworkID::Enkinet => Self::enkinet(),
-            NetworkID::Hammunet => Self::hammunet(),
-            NetworkID::Mardunet => Self::mardunet(),
-            NetworkID::Adapanet => panic!("No network exists for {}", value),
-            NetworkID::Zabanet => panic!("No network exists for {}", value),
-            NetworkID::Nergalnet => panic!("No network exists for {}", value),
-            NetworkID::Simulator => panic!("No network exists for {}", value),
-        }
-    }
-}
-
 impl Gateway {
     pub fn new(url: String, id: NetworkID) -> Result<Self> {
         let url = parse_url(url)?;
@@ -254,44 +235,5 @@ mod tests {
             .len(),
             9
         );
-    }
-
-    #[test]
-    fn from_network_id() {
-        let ids = HashSet::<NetworkID>::from_iter(NetworkID::all());
-        let unsupported = HashSet::<NetworkID>::from_iter([
-            NetworkID::Adapanet,
-            NetworkID::Zabanet,
-            NetworkID::Nergalnet,
-            NetworkID::Simulator,
-        ]);
-        ids.difference(&unsupported).for_each(|n| {
-            let sut = SUT::from(*n);
-            assert_eq!(sut.network.id, *n);
-        })
-    }
-
-    #[test]
-    #[should_panic(expected = "No network exists for adapanet")]
-    fn from_network_id_unsupported_adapanet() {
-        _ = SUT::from(NetworkID::Adapanet);
-    }
-
-    #[test]
-    #[should_panic(expected = "No network exists for zabanet")]
-    fn from_network_id_unsupported_zabanet() {
-        _ = SUT::from(NetworkID::Zabanet);
-    }
-
-    #[test]
-    #[should_panic(expected = "No network exists for nergalnet")]
-    fn from_network_id_unsupported_nergalnet() {
-        _ = SUT::from(NetworkID::Nergalnet);
-    }
-
-    #[test]
-    #[should_panic(expected = "No network exists for simulator")]
-    fn from_network_id_unsupported_simulator() {
-        _ = SUT::from(NetworkID::Simulator);
     }
 }

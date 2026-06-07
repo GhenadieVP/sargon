@@ -625,7 +625,7 @@ impl SargonOS {
             .collect::<Vec<RoleRequirement>>();
 
         let response = self
-            .gateway_client()?
+            .gateway_client()
             .fetch_entities_by_role_requirement_lookup(role_requirements)
             .await?;
 

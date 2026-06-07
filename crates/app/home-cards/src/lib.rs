@@ -19,8 +19,8 @@ pub mod prelude {
     pub(crate) use drivers::prelude::*;
     pub(crate) use enum_as_inner::EnumAsInner;
     pub(crate) use identified_vec_of::prelude::*;
-    pub(crate) use network::prelude::*;
     pub use prelude::prelude::*;
+    pub(crate) use profile_gateway::prelude::*;
     pub(crate) use serde::{Deserialize, Serialize};
 
     #[cfg(test)]

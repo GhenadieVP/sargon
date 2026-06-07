@@ -20,10 +20,6 @@ extension Gateway {
 		self = try newGatewayWithUrlOnNetwork(url: url, networkId: networkID)
 	}
 
-	public static func forNetwork(id networkID: NetworkID) -> Self {
-		newGatewayForNetworkId(networkId: networkID)
-	}
-
 	public static let mainnet = gatewayMainnet()
 	public static let stokenet = gatewayStokenet()
 }

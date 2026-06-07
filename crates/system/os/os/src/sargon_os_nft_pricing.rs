@@ -43,7 +43,7 @@ impl SargonOS {
         currency: FiatCurrency,
         force_fetch: bool,
     ) -> Result<HashMap<NonFungibleGlobalId, Decimal192>> {
-        let gateway_client = self.gateway_client()?;
+        let gateway_client = self.gateway_client();
         let state_version = gateway_client
             .gateway_status()
             .await?

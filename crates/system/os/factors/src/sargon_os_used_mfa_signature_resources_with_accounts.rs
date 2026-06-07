@@ -73,7 +73,7 @@ impl OsUsedMfaSignatureResourcesWithAccounts for SargonOS {
             .collect_vec();
 
         let response = self
-            .gateway_client()?
+            .gateway_client()
             .fetch_entities_by_role_requirement_lookup(requirements)
             .await?;
 

@@ -19,11 +19,11 @@ impl OsCommitProvisionalSecurityState for SargonOS {
         &self,
         entity_address: AddressOfAccountOrPersona,
     ) -> Result<()> {
-        let (gateway_client, network_id) = self.gateway_client_on()?;
+        let gateway_client = self.gateway_client();
 
         // Fetch ancestor addresses
         let badge_owner_per_entity = gateway_client
-            .fetch_entities_badge_owners(network_id, vec![entity_address])
+            .fetch_entities_badge_owners(vec![entity_address])
             .await?;
 
         let maybe_badge_owner =

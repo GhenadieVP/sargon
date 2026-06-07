@@ -19,7 +19,7 @@ pub trait ApplyShieldTransactionsXrdBalancesFetcher: Send + Sync {
     /// And ornaments the inputs with the fetched XRD balances.
     async fn get_xrd_balances(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifests_with_entities_without_xrd_balances: Vec<
             ShieldApplicationInputWithoutXrdBalance,
         >,
@@ -40,15 +40,19 @@ impl ApplyShieldTransactionsXrdBalancesFetcherImpl {
     /// (Personas do not have an XRD balance).
     async fn batch_fetch_xrd_balances_of_accounts_or_access_controllers(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         addresses: IndexSet<AddressOfPayerOfShieldApplication>,
     ) -> Result<XrdBalances> {
-        assert!(addresses.iter().all(|a| a.network_id() == network_id));
-        let gateway_client =
-            GatewayClient::new(self.networking_driver.clone(), network_id);
+        let gateway_client = GatewayClient::with_networking_driver(
+            self.networking_driver.clone(),
+            gateway,
+        );
+        assert!(addresses
+            .iter()
+            .all(|a| a.network_id() == gateway_client.network_id()));
 
         let balances = gateway_client
-            .xrd_balances_of_access_controller_or_account(network_id, addresses)
+            .xrd_balances_of_access_controller_or_account(addresses)
             .await?;
 
         let balances = balances
@@ -71,7 +75,7 @@ impl ApplyShieldTransactionsXrdBalancesFetcher
     /// And ornaments the inputs with the fetched XRD balances.
     async fn get_xrd_balances(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifests_with_entities_without_xrd_balances: Vec<
             ShieldApplicationInputWithoutXrdBalance,
         >,
@@ -83,7 +87,7 @@ impl ApplyShieldTransactionsXrdBalancesFetcher
 
         let mut balances = self
             .batch_fetch_xrd_balances_of_accounts_or_access_controllers(
-                network_id,
+                gateway,
                 addresses_to_query,
             )
             .await?;

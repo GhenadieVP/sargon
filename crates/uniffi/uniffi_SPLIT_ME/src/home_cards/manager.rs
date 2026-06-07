@@ -14,7 +14,7 @@ impl HomeCardsManager {
     #[uniffi::constructor]
     pub fn new(
         networking_driver: Arc<dyn NetworkingDriver>,
-        network_id: NetworkID,
+        gateway: Gateway,
         cards_storage: Arc<dyn HomeCardsStorage>,
         observer: Arc<dyn HomeCardsObserver>,
     ) -> Self {
@@ -22,7 +22,7 @@ impl HomeCardsManager {
             Arc::new(NetworkingDriverAdapter {
                 wrapped: networking_driver,
             }),
-            network_id.into(),
+            gateway.into_internal(),
             Arc::new(HomeCardsStorageAdapter {
                 wrapped: cards_storage,
             }),

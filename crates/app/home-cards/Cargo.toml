@@ -1,6 +1,6 @@
 [package]
 name = "home-cards"
-version = "1.2.57"
+version = "1.2.58"
 edition = "2021"
 
 [dependencies]
@@ -15,6 +15,7 @@ metadata = { workspace = true }
 drivers = { workspace = true }
 gateway-client-and-api = { workspace = true }
 gateway-models = { workspace = true }
+profile-gateway = { workspace = true }
 
 # === RADIX DEPENDENCIES ===
 # None

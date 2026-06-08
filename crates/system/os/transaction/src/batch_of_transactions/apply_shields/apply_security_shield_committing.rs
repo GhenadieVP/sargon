@@ -32,7 +32,6 @@ pub trait ApplySecurityShieldCommitting: Send + Sync {
     /// Can work with single transaction of course...
     async fn sign_and_enqueue_batch_of_transactions_applying_security_shield(
         &self,
-        network_id: NetworkID,
         manifest_and_payer_tuples: Vec<ManifestWithPayerByAddress>, // TODO: Want IndexSet but not Hash
     ) -> Result<IndexSet<TransactionIntentHash>>;
 }
@@ -41,12 +40,11 @@ pub trait ApplySecurityShieldCommitting: Send + Sync {
 impl ApplySecurityShieldCommitting for SargonOS {
     async fn sign_and_enqueue_batch_of_transactions_applying_security_shield(
         &self,
-        network_id: NetworkID,
         manifest_and_payer_tuples: Vec<ManifestWithPayerByAddress>, // TODO: Want IndexSet but not Hash
     ) -> Result<IndexSet<TransactionIntentHash>> {
         let committer = ApplyShieldTransactionsCommitterImpl::new(self)?;
         committer
-            .commit(network_id, manifest_and_payer_tuples)
+            .commit(self.current_gateway(), manifest_and_payer_tuples)
             .await
     }
 }

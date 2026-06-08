@@ -79,7 +79,7 @@ impl OsShieldApplying for SargonOS {
         shield: &SecurityStructureOfFactorSources,
         entity_addresses: IndexSet<AddressOfAccountOrPersona>,
     ) -> Result<EntitiesOnNetwork> {
-        let network = self.current_network_id()?;
+        let network = self.current_network_id();
         let factor_sources = self._get_factor_sources_from_security_structure_that_require_spot_check(shield, entity_addresses.clone(), network).await?;
         self._perform_spot_check_on_factor_sources(factor_sources)
             .await?;

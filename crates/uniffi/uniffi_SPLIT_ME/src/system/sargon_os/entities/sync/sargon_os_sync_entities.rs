@@ -42,13 +42,11 @@ impl SargonOS {
     /// is deleted
     pub async fn check_accounts_deleted_on_ledger(
         &self,
-        network_id: NetworkID,
         account_addresses: Vec<AccountAddress>,
     ) -> Result<HashMap<AccountAddress, bool>> {
         let result = self
             .wrapped
             .check_accounts_deleted_on_ledger(
-                network_id.into_internal(),
                 account_addresses
                     .iter()
                     .map(|a| a.into_internal())

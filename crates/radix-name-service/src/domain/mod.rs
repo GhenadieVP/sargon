@@ -95,7 +95,7 @@ mod fetch_tests {
             });
 
         let sut =
-            SUT::new_xrd_domains(Arc::new(mock_antenna), NetworkID::Mainnet)
+            SUT::new_xrd_domains(Arc::new(mock_antenna), Gateway::mainnet())
                 .unwrap();
 
         let domain = RnsDomain::new("bakirci.xrd".to_owned());
@@ -159,7 +159,7 @@ mod fetch_tests {
             });
 
         let sut =
-            SUT::new_xrd_domains(Arc::new(mock_antenna), NetworkID::Mainnet)
+            SUT::new_xrd_domains(Arc::new(mock_antenna), Gateway::mainnet())
                 .unwrap();
 
         let result =
@@ -203,7 +203,7 @@ mod fetch_tests {
         let mock_antenna = MockNetworkingDriver::new(200, body);
 
         let sut =
-            SUT::new_xrd_domains(Arc::new(mock_antenna), NetworkID::Mainnet)
+            SUT::new_xrd_domains(Arc::new(mock_antenna), Gateway::mainnet())
                 .unwrap();
 
         let result =
@@ -247,7 +247,7 @@ mod fetch_tests {
         let mock_antenna = MockNetworkingDriver::new(200, body);
 
         let sut =
-            SUT::new_xrd_domains(Arc::new(mock_antenna), NetworkID::Mainnet)
+            SUT::new_xrd_domains(Arc::new(mock_antenna), Gateway::mainnet())
                 .unwrap();
 
         let result =

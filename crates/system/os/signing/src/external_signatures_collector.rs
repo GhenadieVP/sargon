@@ -346,7 +346,7 @@ pub(crate) async fn fetch_role_assignments_for_addresses(
         return Ok(IndexMap::new());
     }
 
-    let gateway_client = os.gateway_client()?;
+    let gateway_client = os.gateway_client();
     let ledger_state = gateway_client.gateway_status().await?.ledger_state;
     let request = StateEntityDetailsRequest::new(
         addresses.clone(),
@@ -429,10 +429,9 @@ pub(crate) async fn resolve_external_accounts_for_subintent(
         "External accounts detected for subintent: {:?}",
         external_account_addresses
     );
-    let (gateway_client, network_id) = os.gateway_client_on()?;
+    let gateway_client = os.gateway_client();
     let badge_owners = gateway_client
         .fetch_entities_badge_owners(
-            network_id,
             external_account_addresses
                 .iter()
                 .map(|address| AddressOfAccountOrPersona::Account(*address))

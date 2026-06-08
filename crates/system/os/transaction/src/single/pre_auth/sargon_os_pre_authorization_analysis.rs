@@ -33,7 +33,7 @@ impl OsAnalysePreAuthPreview for SargonOS {
             instructions.len(),
             blobs.0.len()
         );
-        let network_id = self.current_network_id()?;
+        let network_id = self.current_network_id();
         debug!("Pre-auth review: using network_id={:?}", network_id);
         let subintent_manifest = SubintentManifest::new(
             instructions,

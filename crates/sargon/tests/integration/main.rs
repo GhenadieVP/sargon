@@ -9,14 +9,14 @@ mod integration_tests {
     const MAX: Duration = Duration::from_secs(5);
 
     #[cfg(test)]
-    pub fn new_gateway_client(network_id: NetworkID) -> GatewayClient {
+    pub fn new_gateway_client(gateway: Gateway) -> GatewayClient {
         let driver = RustNetworkingDriver::new();
-        GatewayClient::new(driver, network_id)
+        GatewayClient::with_networking_driver(driver, gateway)
     }
 
     #[actix_rt::test]
     async fn test_xrd_balance_of_account_or_zero() {
-        let gateway_client = new_gateway_client(NetworkID::Mainnet);
+        let gateway_client = new_gateway_client(Gateway::mainnet());
         let sut = gateway_client
             .xrd_balance_of_account_or_zero(AccountAddress::sample_mainnet());
 
@@ -26,16 +26,13 @@ mod integration_tests {
 
     #[actix_rt::test]
     async fn test_account_deleted() {
-        let gateway_client = new_gateway_client(NetworkID::Stokenet);
+        let gateway_client = new_gateway_client(Gateway::stokenet());
         let account_address = AccountAddress::try_from_bech32(
             "account_tdx_2_12ywudmhgrlhvxsukpxn9pqr3dzv4la9upszfsms0pz0sh3lu6erxux"
         ).unwrap();
 
         let result = gateway_client
-            .check_accounts_are_deleted(
-                NetworkID::Stokenet,
-                vec![account_address],
-            )
+            .check_accounts_are_deleted(vec![account_address])
             .await
             .unwrap();
 
@@ -44,10 +41,10 @@ mod integration_tests {
 
     #[actix_rt::test]
     async fn test_xrd_balance_of_account_or_zero_is_zero_for_unknown_mainnet() {
-        let network_id = NetworkID::Mainnet;
-        let gateway_client = new_gateway_client(network_id);
-        let sut = gateway_client
-            .xrd_balance_of_account_or_zero(AccountAddress::random(network_id));
+        let gateway_client = new_gateway_client(Gateway::mainnet());
+        let sut = gateway_client.xrd_balance_of_account_or_zero(
+            AccountAddress::random(gateway_client.network_id()),
+        );
 
         let xrd_balance = timeout(MAX, sut).await.unwrap().unwrap();
         assert_eq!(xrd_balance, Decimal192::zero());
@@ -56,10 +53,10 @@ mod integration_tests {
     #[actix_rt::test]
     async fn test_xrd_balance_of_account_or_zero_is_zero_for_unknown_stokenet()
     {
-        let network_id = NetworkID::Stokenet;
-        let gateway_client = new_gateway_client(network_id);
-        let sut = gateway_client
-            .xrd_balance_of_account_or_zero(AccountAddress::random(network_id));
+        let gateway_client = new_gateway_client(Gateway::stokenet());
+        let sut = gateway_client.xrd_balance_of_account_or_zero(
+            AccountAddress::random(gateway_client.network_id()),
+        );
 
         let xrd_balance = timeout(MAX, sut).await.unwrap().unwrap();
         assert_eq!(xrd_balance, Decimal192::zero());
@@ -67,7 +64,7 @@ mod integration_tests {
 
     #[actix_rt::test]
     async fn test_epoch() {
-        let gateway_client = new_gateway_client(NetworkID::Mainnet);
+        let gateway_client = new_gateway_client(Gateway::mainnet());
         let sut = gateway_client.current_epoch();
         let epoch = timeout(MAX, sut).await.unwrap().unwrap();
         assert!(epoch > Epoch::from(0));
@@ -76,8 +73,7 @@ mod integration_tests {
     #[actix_rt::test]
     async fn dry_run_transaction() {
         // ARRANGE
-        let network_id = NetworkID::Mainnet;
-        let gateway_client = new_gateway_client(network_id);
+        let gateway_client = new_gateway_client(Gateway::mainnet());
         let start_epoch_inclusive =
             timeout(MAX, gateway_client.current_epoch())
                 .await
@@ -104,7 +100,7 @@ mod integration_tests {
         let end_epoch_exclusive = Epoch::from(start_epoch_inclusive.0 + 10u64);
         let notary_public_key = Ed25519PublicKey::sample();
         let header = TransactionHeader::new(
-            network_id,
+            gateway_client.network_id(),
             start_epoch_inclusive,
             end_epoch_exclusive,
             Nonce::random(),
@@ -150,11 +146,12 @@ mod integration_tests {
 
     async fn submit_tx_use_faucet(
         private_key: impl Into<PrivateKey>,
-        network_id: NetworkID,
+        gateway: Gateway,
     ) -> Result<(AccountAddress, TransactionIntentHash)> {
         let private_key = private_key.into();
         // ARRANGE
-        let gateway_client = new_gateway_client(network_id);
+        let gateway_client = new_gateway_client(gateway);
+        let network_id = gateway_client.network_id();
 
         let public_key = private_key.public_key();
 
@@ -214,21 +211,23 @@ mod integration_tests {
 
     #[actix_rt::test]
     async fn submit_transaction_use_faucet() {
-        let network_id = NetworkID::Stokenet;
         let private_key = Ed25519PrivateKey::generate();
         println!("🔮 private_key: {}", &private_key.to_hex());
         let (account_address, tx_id) =
-            submit_tx_use_faucet(private_key, network_id).await.unwrap();
+            submit_tx_use_faucet(private_key, Gateway::stokenet())
+                .await
+                .unwrap();
         println!("🔮 account_address: {}, tx_id: {}", account_address, tx_id);
     }
 
     #[actix_rt::test]
     async fn submit_transaction_use_faucet_secp256k1() {
-        let network_id = NetworkID::Stokenet;
         let private_key = Secp256k1PrivateKey::generate();
         println!("🔮 private_key: {}", &private_key.to_hex());
         let (account_address, tx_id) =
-            submit_tx_use_faucet(private_key, network_id).await.unwrap();
+            submit_tx_use_faucet(private_key, Gateway::stokenet())
+                .await
+                .unwrap();
         println!("🔮 account_address: {}, tx_id: {}", account_address, tx_id);
         assert!(account_address.is_legacy_address())
     }
@@ -239,7 +238,7 @@ mod integration_tests {
             "account_tdx_2_129nx5lgkk3fz9gqf3clppeljkezeyyymqqejzp97tpk0r8els7hg3j",
         )
             .unwrap();
-        let gateway_client = new_gateway_client(NetworkID::Stokenet);
+        let gateway_client = new_gateway_client(Gateway::stokenet());
         let sut = gateway_client.fetch_dapp_metadata(gumball_address);
 
         let response = timeout(MAX, sut).await.unwrap().unwrap();
@@ -257,11 +256,12 @@ mod integration_tests {
 
     #[actix_rt::test]
     async fn get_transaction_status() {
-        let network_id = NetworkID::Stokenet;
-        let gateway_client = new_gateway_client(network_id);
+        let gateway_client = new_gateway_client(Gateway::stokenet());
         let private_key = Ed25519PrivateKey::generate();
         let (_, tx_id) =
-            submit_tx_use_faucet(private_key, network_id).await.unwrap();
+            submit_tx_use_faucet(private_key, gateway_client.gateway.clone())
+                .await
+                .unwrap();
 
         let status_response =
             timeout(MAX, gateway_client.get_transaction_status(tx_id))

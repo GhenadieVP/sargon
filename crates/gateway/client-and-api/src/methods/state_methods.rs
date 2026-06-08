@@ -10,9 +10,7 @@ impl GatewayClient {
         &self,
         address: AccountAddress,
     ) -> Result<Option<Decimal192>> {
-        let map = self
-            .xrd_balances_of_accounts(address.network_id(), vec![address])
-            .await?;
+        let map = self.xrd_balances_of_accounts(vec![address]).await?;
         Ok(map.get(&address).cloned().flatten())
     }
 
@@ -20,12 +18,10 @@ impl GatewayClient {
     /// balance for each account (being `None` if it has no balance).
     pub async fn xrd_balances_of_accounts(
         &self,
-        network_id: NetworkID,
         addresses: impl IntoIterator<Item = AccountAddress>,
     ) -> Result<IndexMap<AccountAddress, Option<Decimal192>>> {
         let map = self
             .xrd_balances_of_access_controller_or_account(
-                network_id,
                 addresses
                     .into_iter()
                     .map(AddressOfAccessControllerOrAccount::from),
@@ -49,7 +45,6 @@ impl GatewayClient {
     /// Fetched the XRD balance of the component - either AccountAddress or AccessControllerAddress.
     pub async fn xrd_balances_of_access_controller_or_account(
         &self,
-        network_id: NetworkID,
         addresses: impl IntoIterator<Item = AddressOfAccessControllerOrAccount>,
     ) -> Result<IndexMap<AddressOfAccessControllerOrAccount, Option<Decimal192>>>
     {
@@ -61,7 +56,7 @@ impl GatewayClient {
             StateEntityDetailsRequest::addresses_only,
             |req| self.state_entity_details(req),
             |responses| {
-                let xrd_address = ResourceAddress::xrd_on_network(network_id);
+                let xrd_address = ResourceAddress::xrd_on_network(self.network_id());
 
                 let map = responses
                     .into_iter()
@@ -133,9 +128,9 @@ impl GatewayClient {
     ///   Means that this entity is securified and is controlled ny that access controller.
     pub async fn fetch_entities_badge_owners(
         &self,
-        network_id: NetworkID,
         entity_addresses: impl IntoIterator<Item = AddressOfAccountOrPersona>,
     ) -> Result<HashMap<AddressOfAccountOrPersona, Option<Address>>> {
+        let network_id = self.gateway.network.id;
         // Construct the owner badge resource address
         let account_owner_badge_resource_address =
             ResourceAddress::new_from_node_id(
@@ -234,13 +229,11 @@ impl GatewayClient {
     /// it owns and checking if its owner badge is one of them.
     pub async fn check_accounts_are_deleted(
         &self,
-        network_id: NetworkID,
         account_addresses: impl IntoIterator<Item = AccountAddress>,
     ) -> Result<IndexMap<AccountAddress, bool>> {
         let requested_addresses = account_addresses.into_iter().collect_vec();
         let global_ancestor_address_per_account = self
             .fetch_entities_badge_owners(
-                network_id,
                 requested_addresses
                     .clone()
                     .iter()
@@ -714,7 +707,10 @@ mod fetch_all_resources_tests {
             vec![entity_details_response],
             spy_no_more_pages_to_load_requests(),
         );
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         // Execute the request and check the result
         let result = sut
@@ -784,7 +780,10 @@ mod fetch_all_resources_tests {
             ],
             spy_more_pages_to_load_requests(),
         );
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         // Execute the request and check the result
         let result = sut
@@ -856,7 +855,10 @@ mod fetch_all_resources_tests {
         // Mock the driver
         let mock_driver =
             MockNetworkingDriver::new_with_responses(vec![response]);
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         // Execute the request and check the result has two empty collections
         let result = sut
@@ -888,7 +890,10 @@ mod fetch_all_resources_tests {
         let mock_driver = MockNetworkingDriver::new_with_responses(vec![
             entity_details_response,
         ]);
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         // Execute the request and check the result is a failure
         let result = sut
@@ -1025,7 +1030,10 @@ mod filter_transferable_tests {
         let mock_driver = MockNetworkingDriver::new_with_responses(vec![
             entity_details_response,
         ]);
-        let sut = SUT::with_gateway(Arc::new(mock_driver), Gateway::stokenet());
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_driver),
+            Gateway::stokenet(),
+        );
 
         // Execute the request and check the result
         let result = sut.filter_transferable_resources(output).await.unwrap();

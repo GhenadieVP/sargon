@@ -16,7 +16,7 @@ pub trait ApplyShieldTransactionsTransactionIntentBuilder: Send + Sync {
     /// the signing manager.
     async fn build_transaction_intents(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifests_with_entities_with_xrd_balance: Vec<
             SecurityShieldApplication,
         >,
@@ -50,13 +50,15 @@ impl ApplyShieldTransactionsTransactionIntentBuilder
     /// the signing manager.
     async fn build_transaction_intents(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifests_with_entities_with_xrd_balance: Vec<
             SecurityShieldApplication,
         >,
     ) -> Result<ApplySecurityShieldPayloadToSign> {
-        let gateway_client =
-            GatewayClient::new(self.networking_driver.clone(), network_id);
+        let gateway_client = GatewayClient::with_networking_driver(
+            self.networking_driver.clone(),
+            gateway,
+        );
 
         let start_epoch_inclusive = gateway_client.current_epoch().await?;
 
@@ -82,7 +84,7 @@ impl ApplyShieldTransactionsTransactionIntentBuilder
             );
             let notary_public_key = notary_private_key.public_key();
             let header = TransactionHeader::new(
-                network_id,
+                gateway_client.network_id(),
                 start_epoch_inclusive,
                 end_epoch_exclusive,
                 nonce,

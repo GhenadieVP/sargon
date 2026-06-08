@@ -18,42 +18,24 @@ pub struct GatewayClient {
 }
 
 impl GatewayClient {
-    /// Constructs a new `GatewayClient` with a NetworkingDriver for a specified
-    /// `Gateway`.
-    pub fn with_gateway(
-        networking_driver: Arc<dyn NetworkingDriver>,
-        gateway: Gateway,
-    ) -> Self {
+    pub fn new(http_client: HttpClient, gateway: Gateway) -> Self {
         Self {
-            http_client: HttpClient {
-                driver: networking_driver,
-            },
+            http_client,
             gateway,
         }
     }
 
-    /// Constructs a new `GatewayClient` with a `HttpClient` for a specified network
-    pub fn with_http_client(
-        http_client: HttpClient,
-        network_id: NetworkID,
+    /// Constructs a new `GatewayClient` with a NetworkingDriver for a specified
+    /// `Gateway`.
+    pub fn with_networking_driver(
+        networking_driver: Arc<dyn NetworkingDriver>,
+        gateway: Gateway,
     ) -> Self {
-        Self {
-            http_client,
-            gateway: Gateway::from(network_id),
-        }
+        Self::new(HttpClient::new(networking_driver), gateway)
     }
 
-    /// Constructs a new `GatewayClient` with a NetworkingDriver for a specified
-    /// network, by looking up an Radix DLT provided Gateway on that network.
-    ///
-    /// # Panics
-    /// Panics if Radix DLT does not provide a Gateway for the specified
-    /// `network_id` - e.g. will panic if you specify `NetworkID::Simulator` (duh).
-    pub fn new(
-        networking_driver: Arc<dyn NetworkingDriver>,
-        network_id: NetworkID,
-    ) -> Self {
-        Self::with_gateway(networking_driver, Gateway::from(network_id))
+    pub fn network_id(&self) -> NetworkID {
+        self.gateway.network.id
     }
 }
 
@@ -74,8 +56,8 @@ mod tests {
             MockNetworkingDriver::with_response(TransactionSubmitResponse {
                 duplicate: true,
             });
-        let sut =
-            SUT::new(Arc::new(mock_networking_driver), NetworkID::Stokenet);
+        let http_client = HttpClient::new(Arc::new(mock_networking_driver));
+        let sut = SUT::new(http_client, Gateway::stokenet());
         let req =
             sut.submit_notarized_transaction(NotarizedTransaction::sample());
         let result = timeout(MAX, req).await.unwrap();
@@ -94,7 +76,7 @@ mod tests {
         let mock_networking_driver =
             MockNetworkingDriver::new(200, BagOfBytes::new());
         let base = "http://example.com";
-        let sut = SUT::with_gateway(
+        let sut = SUT::with_networking_driver(
             Arc::new(mock_networking_driver),
             Gateway::declare(base, NetworkID::Stokenet),
         );
@@ -114,8 +96,10 @@ mod tests {
             404, // bad code
             BagOfBytes::new(),
         );
-        let sut =
-            SUT::new(Arc::new(mock_networking_driver), NetworkID::Stokenet);
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_networking_driver),
+            Gateway::stokenet(),
+        );
         let req = sut.current_epoch();
         let result = timeout(MAX, req).await.unwrap();
         assert_eq!(
@@ -130,8 +114,10 @@ mod tests {
             200,
             BagOfBytes::sample_aced(), // wrong JSON
         );
-        let sut =
-            SUT::new(Arc::new(mock_networking_driver), NetworkID::Stokenet);
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_networking_driver),
+            Gateway::stokenet(),
+        );
         let req = sut.current_epoch();
         let result = timeout(MAX, req).await.unwrap();
         assert_eq!(
@@ -167,8 +153,10 @@ mod tests {
                 )
             },
         );
-        let sut =
-            SUT::new(Arc::new(mock_networking_driver), NetworkID::Stokenet);
+        let sut = SUT::with_networking_driver(
+            Arc::new(mock_networking_driver),
+            Gateway::stokenet(),
+        );
         let req = sut.current_epoch();
         drop(timeout(MAX, req).await.unwrap());
     }

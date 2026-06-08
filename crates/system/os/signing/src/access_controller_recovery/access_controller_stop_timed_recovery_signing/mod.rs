@@ -14,7 +14,7 @@ pub async fn sign_access_controller_stop_timed_recovery_transaction(
     ac_address: AccessControllerAddress,
 ) -> Result<SignedIntent> {
     let profile = os.profile()?;
-    let gw_client = os.gateway_client()?;
+    let gw_client = os.gateway_client();
 
     let (fee_paying_account_address, fee) = base_transaction_intent
         .extract_fee_payer_info()

@@ -9,7 +9,6 @@ pub trait OsSyncEntitiesStateOnLedger {
     async fn sync_accounts_deleted_on_ledger(&self) -> Result<bool>;
     async fn check_accounts_deleted_on_ledger(
         &self,
-        network_id: NetworkID,
         account_addresses: IndexSet<AccountAddress>,
     ) -> Result<IndexMap<AccountAddress, bool>>;
 }
@@ -51,12 +50,11 @@ impl OsSyncEntitiesStateOnLedger for SargonOS {
             },
         )?);
 
-        let (gateway_client, network_id) = self.gateway_client_on()?;
+        let gateway_client = self.gateway_client();
 
         // Fetch ancestor addresses
-        let badge_owner_per_entity = gateway_client
-            .fetch_entities_badge_owners(network_id, entities)
-            .await?;
+        let badge_owner_per_entity =
+            gateway_client.fetch_entities_badge_owners(entities).await?;
 
         // Collect sync actions based on the profile state
         let mut sync_actions = IndexSet::<EntitySyncAction>::new();
@@ -141,12 +139,10 @@ impl OsSyncEntitiesStateOnLedger for SargonOS {
     ///
     /// Returns true if any account became tombstoned.
     async fn sync_accounts_deleted_on_ledger(&self) -> Result<bool> {
-        let network_id = self.current_network_id()?;
         let accounts = self.accounts_on_current_network()?;
 
         let account_addresses_with_deleted_status = self
             .check_accounts_deleted_on_ledger(
-                network_id,
                 accounts.iter().map(|a| a.address).collect(),
             )
             .await?;
@@ -180,13 +176,12 @@ impl OsSyncEntitiesStateOnLedger for SargonOS {
     /// is deleted
     async fn check_accounts_deleted_on_ledger(
         &self,
-        network_id: NetworkID,
         account_addresses: IndexSet<AccountAddress>,
     ) -> Result<IndexMap<AccountAddress, bool>> {
-        let gateway_client = self.gateway_client_with(network_id);
+        let gateway_client = self.gateway_client();
 
         gateway_client
-            .check_accounts_are_deleted(network_id, account_addresses)
+            .check_accounts_are_deleted(account_addresses)
             .await
     }
 }
@@ -285,13 +280,10 @@ mod tests {
 
         // ACT
         let accounts_status = os
-            .check_accounts_deleted_on_ledger(
-                NetworkID::Stokenet,
-                IndexSet::from_iter([
-                    account_address_deleted,
-                    account_address_not_deleted,
-                ]),
-            )
+            .check_accounts_deleted_on_ledger(IndexSet::from_iter([
+                account_address_deleted,
+                account_address_not_deleted,
+            ]))
             .await
             .unwrap();
 

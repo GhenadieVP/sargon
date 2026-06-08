@@ -4,7 +4,7 @@ use crate::prelude::*;
 pub trait ApplyShieldTransactionsCommitter: Send + Sync {
     async fn commit(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifest_and_payer_tuples: Vec<ManifestWithPayerByAddress>, // TODO: Want IndexSet but not Hash
     ) -> Result<IndexSet<TransactionIntentHash>>;
 }
@@ -34,12 +34,12 @@ impl ApplyShieldTransactionsCommitter for ApplyShieldTransactionsCommitterImpl {
     /// which applies a shields to entities.
     async fn commit(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifest_and_payer_tuples: Vec<ManifestWithPayerByAddress>, // TODO: Want IndexSet but not Hash
     ) -> Result<IndexSet<TransactionIntentHash>> {
         let payload_to_sign = self
             .builder
-            .build_payload_to_sign(network_id, manifest_and_payer_tuples)
+            .build_payload_to_sign(gateway, manifest_and_payer_tuples)
             .await?;
 
         // Try to sign all applications - we will use  "the best" of

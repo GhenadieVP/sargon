@@ -9,15 +9,15 @@ impl SargonOS {
     /// of the active Profile. This is the canonical value of "current network",
     /// which affects which accounts host clients display to end user and to
     /// which network transactions are submitted, amongst other behaviors.
-    pub fn current_network_id(&self) -> Result<NetworkID> {
-        self.wrapped.current_network_id().into_result()
+    pub fn current_network_id(&self) -> NetworkID {
+        self.wrapped.current_network_id().into()
     }
 
     /// The current gateway host client is using, which affects `current_network_id`.
     /// All Network Requests reading from Radix ledger and submission of new
     /// transactions will go the the Radix Network of the current Gateway.
-    pub fn current_gateway(&self) -> Result<Gateway> {
-        self.wrapped.current_gateway().into_result()
+    pub fn current_gateway(&self) -> Gateway {
+        self.wrapped.current_gateway().into()
     }
 
     /// Returns the `gateways` values of the current Profile.

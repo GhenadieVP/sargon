@@ -14,7 +14,7 @@ pub trait ApplyShieldTransactionsBuilder: Send + Sync {
     /// 5. Persist notary private keys to be able to cancel transactions
     async fn build_payload_to_sign(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifest_and_payer_tuples: Vec<ManifestWithPayerByAddress>, // TODO: Want IndexSet but not Hash
     ) -> Result<ApplySecurityShieldPayloadToSign>;
 }
@@ -91,7 +91,7 @@ impl ApplyShieldTransactionsBuilder for ApplyShieldTransactionsBuilderImpl {
     /// 5. Persist notary private keys to be able to cancel transactions
     async fn build_payload_to_sign(
         &self,
-        network_id: NetworkID,
+        gateway: Gateway,
         manifest_and_payer_tuples: Vec<ManifestWithPayerByAddress>, // TODO: Want IndexSet but not Hash
     ) -> Result<ApplySecurityShieldPayloadToSign> {
         // Map Address -> Entity by Profile lookup
@@ -103,7 +103,7 @@ impl ApplyShieldTransactionsBuilder for ApplyShieldTransactionsBuilderImpl {
         let manifests_with_entities_with_xrd_balance = self
             .xrd_balances_fetcher
             .get_xrd_balances(
-                network_id,
+                gateway.clone(),
                 manifests_with_entities_without_xrd_balances,
             )
             .await?;
@@ -120,7 +120,7 @@ impl ApplyShieldTransactionsBuilder for ApplyShieldTransactionsBuilderImpl {
         // all using the same Epoch window (one week).
         let payload_to_sign = self
             .transaction_intent_builder
-            .build_transaction_intents(network_id, applications_without_intents)
+            .build_transaction_intents(gateway, applications_without_intents)
             .await?;
 
         // Persist notary private keys to be able to cancel transactions

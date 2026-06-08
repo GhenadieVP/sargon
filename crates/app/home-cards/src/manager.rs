@@ -37,14 +37,14 @@ impl HomeCardsManager {
 impl HomeCardsManager {
     pub fn new(
         networking_driver: Arc<dyn NetworkingDriver>,
-        network_id: NetworkID,
+        gateway: Gateway,
         cards_storage: Arc<dyn HomeCardsStorage>,
         observer: Arc<dyn HomeCardsObserver>,
     ) -> Self {
         Self::init(
-            Arc::new(Parser::new(GatewayClient::new(
+            Arc::new(Parser::new(GatewayClient::with_networking_driver(
                 networking_driver,
-                network_id,
+                gateway,
             ))),
             cards_storage,
             observer,
@@ -421,7 +421,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_cards_and_old_now_removed_encoded_cards()),
             observer.clone(),
         );
@@ -443,7 +443,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_stored_cards(
                 HomeCards::just(HomeCard::Connector),
             )),
@@ -467,7 +467,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_load_error()),
             observer.clone(),
         );
@@ -481,7 +481,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_empty()),
             observer.clone(),
         );
@@ -506,7 +506,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_save_error()),
             observer.clone(),
         );
@@ -525,7 +525,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_stored_cards(
                 expected_cards.clone(),
             )),
@@ -653,7 +653,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_stored_cards(
                 initial_cards,
             )),
@@ -678,7 +678,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_stored_cards(
                 initial_cards.clone(),
             )),
@@ -704,7 +704,7 @@ mod tests {
         let observer = Arc::new(MockHomeCardsObserver::new());
         let manager = SUT::new(
             Arc::new(MockNetworkingDriver::new_always_failing()),
-            NetworkID::Stokenet,
+            Gateway::stokenet(),
             Arc::new(MockHomeCardsStorage::new_with_stored_cards(
                 initial_cards.clone(),
             )),

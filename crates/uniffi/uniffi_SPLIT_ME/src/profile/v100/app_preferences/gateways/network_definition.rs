@@ -22,6 +22,14 @@ pub fn new_network_definition_lookup_by_name(
 }
 
 #[uniffi::export]
+pub fn new_network_definition_lookup_by_id(
+    network_id: NetworkID,
+) -> Result<NetworkDefinition> {
+    InternalNetworkDefinition::lookup_by_id(network_id.into_internal())
+        .into_result()
+}
+
+#[uniffi::export]
 pub fn new_network_definition_sample() -> NetworkDefinition {
     InternalNetworkDefinition::sample().into()
 }

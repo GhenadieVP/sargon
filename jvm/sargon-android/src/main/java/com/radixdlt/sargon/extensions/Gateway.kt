@@ -7,7 +7,6 @@ import com.radixdlt.sargon.gatewayMainnet
 import com.radixdlt.sargon.gatewayStokenet
 import com.radixdlt.sargon.gatewayToString
 import com.radixdlt.sargon.gatewayWellknownGateways
-import com.radixdlt.sargon.newGatewayForNetworkId
 import com.radixdlt.sargon.newGatewayWithUrlOnNetwork
 
 val Gateway.Companion.mainnet: Gateway
@@ -22,9 +21,6 @@ val Gateway.Companion.wellKnown: Gateways
 @Throws(SargonException::class)
 fun Gateway.Companion.init(url: String, networkId: NetworkId): Gateway =
     newGatewayWithUrlOnNetwork(url = url, networkId = networkId)
-
-fun Gateway.Companion.forNetwork(networkId: NetworkId): Gateway =
-    newGatewayForNetworkId(networkId = networkId)
 
 /**
  * Returns the [Gateway]'s url as [String]

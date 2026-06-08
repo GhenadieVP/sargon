@@ -8,15 +8,17 @@ impl SargonOS {
     /// of the active Profile. This is the canonical value of "current network",
     /// which affects which accounts host clients display to end user and to
     /// which network transactions are submitted, amongst other behaviors.
-    pub fn current_network_id(&self) -> Result<NetworkID> {
-        self.profile_state_holder.current_network_id()
+    pub fn current_network_id(&self) -> NetworkID {
+        self.current_gateway().network.id
     }
 
     /// The current gateway host client is using, which affects `current_network_id`.
     /// All Network Requests reading from Radix ledger and submission of new
     /// transactions will go the the Radix Network of the current Gateway.
-    pub fn current_gateway(&self) -> Result<Gateway> {
-        self.profile_state_holder.current_gateway()
+    pub fn current_gateway(&self) -> Gateway {
+        self.profile_state_holder
+            .current_gateway()
+            .unwrap_or_default()
     }
 
     /// Returns the `gateways` values of the current Profile.
@@ -136,7 +138,7 @@ mod tests {
             .unwrap();
 
         // ASSERT
-        assert_eq!(os.current_gateway().unwrap(), Gateway::stokenet())
+        assert_eq!(os.current_gateway(), Gateway::stokenet())
     }
 
     #[actix_rt::test]
@@ -150,7 +152,7 @@ mod tests {
             .unwrap();
 
         // ASSERT
-        assert_eq!(os.current_network_id().unwrap(), NetworkID::Stokenet)
+        assert_eq!(os.current_network_id(), NetworkID::Stokenet)
     }
 
     #[actix_rt::test]

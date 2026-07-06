@@ -209,12 +209,7 @@ impl SargonOS {
         self.add_entity(account).await
     }
 
-    pub async fn add_entity<
-        E: IsEntity + IsProfileModifiedEvent<E::Address>,
-    >(
-        &self,
-        entity: E,
-    ) -> Result<()> {
+    pub async fn add_entity<E: IsEntity>(&self, entity: E) -> Result<()> {
         let address = entity.address();
         debug!("Adding entity with address: {} to profile", address);
         self.add_entities(IdentifiedVecOf::just(entity)).await
@@ -284,48 +279,8 @@ impl SargonOS {
         &self,
         updated: IdentifiedVecOf<AccountOrPersona>,
     ) -> Result<()> {
-        let addresses = updated
-            .clone()
-            .into_iter()
-            .map(|e| e.address())
-            .collect::<IndexSet<_>>();
-
-        let account_addresses = addresses
-            .iter()
-            .filter_map(|e| e.as_account())
-            .cloned()
-            .collect::<IndexSet<_>>();
-        let identity_addresses = addresses
-            .iter()
-            .filter_map(|e| e.as_identity())
-            .cloned()
-            .collect::<IndexSet<_>>();
-
-        let modified_any_account = !account_addresses.is_empty();
-        let modified_any_persona = !identity_addresses.is_empty();
-
         self.update_profile_with(|p| p.update_entities_erased(updated.clone()))
-            .await?;
-
-        if modified_any_account {
-            if let Some(event) =
-                Account::profile_modified_event(true, account_addresses)
-            {
-                self.event_bus
-                    .emit(EventNotification::profile_modified(event))
-                    .await;
-            }
-        }
-        if modified_any_persona {
-            if let Some(event) =
-                Persona::profile_modified_event(true, identity_addresses)
-            {
-                self.event_bus
-                    .emit(EventNotification::profile_modified(event))
-                    .await;
-            }
-        }
-        Ok(())
+            .await
     }
 
     /// Updates the profile by marking the account with `account_address` as hidden.
@@ -409,9 +364,7 @@ impl SargonOS {
     /// # Emits
     /// Emits `Event::ProfileSaved` after having successfully written the JSON
     /// of the active profile to secure storage.
-    pub async fn add_entities<
-        E: IsEntity + IsProfileModifiedEvent<E::Address>,
-    >(
+    pub async fn add_entities<E: IsEntity>(
         &self,
         entities: impl IntoIterator<Item = E>,
     ) -> Result<()> {
@@ -503,19 +456,6 @@ impl SargonOS {
             })
         })
         .await?;
-
-        if let Some(event) = E::profile_modified_event(
-            false,
-            entities
-                .clone()
-                .into_iter()
-                .map(|e| e.address())
-                .collect::<IndexSet<_>>(),
-        ) {
-            self.event_bus
-                .emit(EventNotification::profile_modified(event))
-                .await;
-        }
 
         Ok(())
     }
@@ -744,40 +684,9 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn test_create_unsaved_account_emits_factor_source_updated() {
-        // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-        os.with_timeout(|os| os.new_wallet()).await.unwrap();
-
-        // ACT
-        os.with_timeout(create_unsaved_mainnet_account_with_bdfs)
-            .await
-            .unwrap();
-
-        // ASSERT
-        assert!(event_bus_driver
-            .recorded()
-            .iter()
-            .any(|e| e.event.kind() == EventKind::FactorSourceUpdated));
-    }
-
-    #[actix_rt::test]
     async fn update_account_and_persona_updates_in_memory_profile() {
         // ARRANGE
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
+        let drivers = Drivers::test();
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
             FactorInstancesCacheClient::in_memory();
@@ -815,25 +724,6 @@ mod tests {
         // ASSERT
         assert_eq!(os.profile().unwrap().networks[0].accounts[0], account);
         assert_eq!(os.profile().unwrap().networks[0].personas[0], persona);
-        use EventKind::*;
-        assert_eq!(
-            event_bus_driver
-                .recorded()
-                .into_iter()
-                .map(|e| e.event.kind())
-                .collect_vec(),
-            vec![
-                Booted,
-                ProfileSaved,
-                ProfileSaved,
-                AccountAdded,
-                ProfileSaved,
-                PersonaAdded,
-                ProfileSaved,
-                AccountUpdated,
-                PersonaUpdated
-            ]
-        );
     }
 
     #[actix_rt::test]
@@ -860,41 +750,6 @@ mod tests {
             .unwrap();
 
         assert_eq!(saved_profile.networks[0].accounts[0], account.clone())
-    }
-
-    #[actix_rt::test]
-    async fn test_update_account_emits() {
-        // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-        os.with_timeout(|x| x.new_wallet()).await.unwrap();
-
-        let mut account = Account::sample();
-        os.with_timeout(|x| x.add_account(account.clone()))
-            .await
-            .unwrap();
-
-        // ACT
-        account.display_name = DisplayName::random();
-        os.with_timeout(|x| x.update_account(account.clone()))
-            .await
-            .unwrap();
-
-        // ASSERT
-        assert!(event_bus_driver
-            .recorded()
-            .iter()
-            .any(|e| e.event.kind() == EventKind::AccountUpdated));
     }
 
     #[actix_rt::test]

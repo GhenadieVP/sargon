@@ -1,32 +1,6 @@
-import CustomDump
 import Foundation
 import Sargon
 import SargonUniFFI
-import XCTest
-
-// MARK: - EventBusDriverTests
-// class EventBusDriverTests: DriverTest<EventBus> {
-//	func test() async throws {
-//		let sut = SUT()
-//
-//		let expectedEvents = [EventKind]([.booted, .profileSaved, .profileSaved, .factorSourceUpdated, .accountAdded, .profileSaved])
-//		let task = Task {
-//			var notifications = Set<EventNotification>()
-//			for await notification in await sut.notifications().prefix(expectedEvents.count) {
-//				notifications.insert(notification)
-//			}
-//			return notifications
-//		}
-//
-//		let bios = BIOS(drivers: .withEventBus(sut))
-//		let os = await TestOS(bios: bios)
-//		try await os.os.newWallet(shouldPreDeriveInstances: false)
-//
-//		try await os.createAccount()
-//		let notifications = await task.value
-//		XCTAssertEqual(Set(notifications.map(\.event.kind)), Set(expectedEvents))
-//	}
-// }
 
 extension HostInfoDriver where Self == AppleHostInfoDriver {
 	static var shared: Self {
@@ -49,7 +23,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: .shared,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: .shared,
 			unsafeStorage: .shared,
 			profileStateChangeDriver: .shared,
@@ -65,7 +38,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: .shared,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: .shared,
 			unsafeStorage: .shared,
 			profileStateChangeDriver: .shared,
@@ -81,7 +53,6 @@ extension Drivers {
 			entropyProvider: entropyProvider,
 			hostInfo: .shared,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: .shared,
 			unsafeStorage: .shared,
 			profileStateChangeDriver: .shared,
@@ -97,7 +68,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: hostInfo,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: .shared,
 			unsafeStorage: .shared,
 			profileStateChangeDriver: .shared,
@@ -113,23 +83,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: .shared,
 			logging: logging,
-			eventBus: .shared,
-			fileSystem: .shared,
-			unsafeStorage: .shared,
-			profileStateChangeDriver: .shared,
-			arculusCsdkDriver: ArculusCsdkDriverImpl(noPointer: .init()),
-			nfcTagDriver: NfcTagDriverImpl(noPointer: .init())
-		)
-	}
-
-	static func withEventBus(_ eventBus: some EventBusDriver) -> Drivers {
-		Drivers(
-			networking: .shared,
-			secureStorage: .shared,
-			entropyProvider: .shared,
-			hostInfo: .shared,
-			logging: .shared,
-			eventBus: eventBus,
 			fileSystem: .shared,
 			unsafeStorage: .shared,
 			profileStateChangeDriver: .shared,
@@ -145,7 +98,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: .shared,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: fileSystem,
 			unsafeStorage: .shared,
 			profileStateChangeDriver: .shared,
@@ -161,7 +113,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: .shared,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: .shared,
 			unsafeStorage: unsafeStorage,
 			profileStateChangeDriver: .shared,

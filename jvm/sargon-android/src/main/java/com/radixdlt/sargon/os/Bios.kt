@@ -10,7 +10,6 @@ import com.radixdlt.sargon.NfcTagDriver
 import com.radixdlt.sargon.annotation.KoverIgnore
 import com.radixdlt.sargon.os.driver.AndroidBiometricAuthorizationDriver
 import com.radixdlt.sargon.os.driver.AndroidEntropyProviderDriver
-import com.radixdlt.sargon.os.driver.AndroidEventBusDriver
 import com.radixdlt.sargon.os.driver.AndroidFileSystemDriver
 import com.radixdlt.sargon.os.driver.AndroidHostInfoDriver
 import com.radixdlt.sargon.os.driver.AndroidLoggingDriver
@@ -28,7 +27,6 @@ fun Bios.Companion.from(
     encryptedPreferencesDataStore: DataStore<Preferences>,
     preferencesDatastore: DataStore<Preferences>,
     deviceInfoDatastore: DataStore<Preferences>,
-    eventBusDriver: AndroidEventBusDriver,
     profileStateChangeDriver: AndroidProfileStateChangeDriver,
     arculusCsdkDriver: ArculusCsdkDriver,
     nfcTagDriver: NfcTagDriver
@@ -49,7 +47,6 @@ fun Bios.Companion.from(
             entropyProvider = AndroidEntropyProviderDriver(),
             hostInfo = AndroidHostInfoDriver(context),
             logging = AndroidLoggingDriver(),
-            eventBus = eventBusDriver,
             fileSystem = AndroidFileSystemDriver(context),
             profileStateChangeDriver = profileStateChangeDriver,
             arculusCsdkDriver = arculusCsdkDriver,

@@ -16,7 +16,6 @@ extension TestOS {
 					entropyProvider: .shared,
 					hostInfo: .shared,
 					logging: .shared,
-					eventBus: EventBus(),
 					fileSystem: .shared,
 					unsafeStorage: UnsafeStorage(
 						userDefaults: .init(

@@ -99,10 +99,6 @@ impl SargonOS {
             .emit(profile_state.clone())
             .await;
 
-        os.event_bus
-            .emit(EventNotification::new(Event::Booted))
-            .await;
-
         info!("Sargon os Booted with profile state: {}", profile_state);
 
         os
@@ -214,11 +210,6 @@ impl SargonOS {
         self.clients
             .profile_state_change
             .emit(ProfileState::Loaded(profile_to_report))
-            .await;
-        self.event_bus
-            .emit(EventNotification::new(Event::ProfileImported {
-                id: imported_id,
-            }))
             .await;
 
         info!("Successfully imported profile, id: {}", imported_id);

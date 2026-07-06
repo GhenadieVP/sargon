@@ -36,15 +36,7 @@ impl SargonOS {
             p.update_any_factor_source(&id, |fs| *fs = updated.clone())
                 .map_err(|_| CommonError::UpdateFactorSourceMutateFailed)
         })
-        .await?;
-
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::FactorSourceUpdated { id },
-            ))
-            .await;
-
-        Ok(())
+        .await
     }
 
     /// Returns `Ok(false)` if the Profile already contained a factor source with the
@@ -76,12 +68,6 @@ impl SargonOS {
         )
         .await?;
 
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::FactorSourceAdded { id },
-            ))
-            .await;
-
         Ok(true)
     }
 
@@ -100,19 +86,10 @@ impl SargonOS {
         &self,
         factor_sources: FactorSources,
     ) -> Result<Vec<FactorSourceID>> {
-        let ids = self
-            .add_factor_sources_without_emitting_factor_sources_added(
-                factor_sources,
-            )
-            .await?;
-
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::FactorSourcesAdded { ids: ids.clone() },
-            ))
-            .await;
-
-        Ok(ids)
+        self.add_factor_sources_without_emitting_factor_sources_added(
+            factor_sources,
+        )
+        .await
     }
 
     /// Updates the name of the corresponding `factor_source` in Profile. Throws `UpdateFactorSourceMutateFailed` error if the
@@ -331,15 +308,7 @@ impl SargonOS {
         );
 
         self.update_profile_with(|p| p.update_last_used_of_factor_source(&id))
-            .await?;
-
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::FactorSourceUpdated { id },
-            ))
-            .await;
-
-        Ok(())
+            .await
     }
 
     pub async fn update_factor_source_remove_flag_main(
@@ -356,15 +325,7 @@ impl SargonOS {
         self.update_profile_with(|p| {
             p.update_factor_source_remove_flag_main(&id)
         })
-        .await?;
-
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::FactorSourceUpdated { id },
-            ))
-            .await;
-
-        Ok(())
+        .await
     }
 }
 
@@ -842,8 +803,7 @@ mod tests {
     async fn when_adding_many_factor_sources_event_factor_sources_added_is_emitted(
     ) {
         // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
+        let drivers = Drivers::test();
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
             FactorInstancesCacheClient::in_memory();
@@ -872,12 +832,6 @@ mod tests {
                 .map(|x| x.id())
                 .collect_vec(),
         );
-        assert!(event_bus_driver.recorded().iter().any(|e| e.event
-            == Event::ProfileModified {
-                change: EventProfileModified::FactorSourcesAdded {
-                    ids: ids.clone()
-                }
-            }));
     }
 
     #[actix_rt::test]
@@ -1562,8 +1516,8 @@ mod tests {
     }
 
     #[allow(dead_code)]
-    async fn boot(event_bus_driver: Arc<RustEventBusDriver>) -> Arc<SUT> {
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
+    async fn boot() -> Arc<SUT> {
+        let drivers = Drivers::test();
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
             FactorInstancesCacheClient::in_memory();

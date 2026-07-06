@@ -54,7 +54,7 @@ let package = Package(
 		// i.e. Sargon does ALL JSON coding, then we can remove this.
 		.package(url: "https://github.com/SwiftyJSON/SwiftyJSON", from: "5.0.2"),
 
-		// Multicast / Share of notifications in EventBus
+		// Multicast / Share of profile state notifications
 		.package(url: "https://github.com/sideeffect-io/AsyncExtensions", exact: "0.5.3"),
 	],
 	targets: [

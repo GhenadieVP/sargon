@@ -6,7 +6,6 @@ pub struct Drivers {
     pub entropy_provider: Arc<dyn EntropyProviderDriver>,
     pub host_info: Arc<dyn HostInfoDriver>,
     pub logging: Arc<dyn LoggingDriver>,
-    pub event_bus: Arc<dyn EventBusDriver>,
     pub file_system: Arc<dyn FileSystemDriver>,
     pub unsafe_storage: Arc<dyn UnsafeStorageDriver>,
     pub profile_state_change_driver: Arc<dyn ProfileStateChangeDriver>,
@@ -22,7 +21,6 @@ impl Drivers {
         entropy_provider: Arc<dyn EntropyProviderDriver>,
         host_info: Arc<dyn HostInfoDriver>,
         logging: Arc<dyn LoggingDriver>,
-        event_bus: Arc<dyn EventBusDriver>,
         file_system: Arc<dyn FileSystemDriver>,
         unsafe_storage: Arc<dyn UnsafeStorageDriver>,
         profile_state_change_driver: Arc<dyn ProfileStateChangeDriver>,
@@ -35,7 +33,6 @@ impl Drivers {
             entropy_provider,
             host_info,
             logging,
-            event_bus,
             file_system,
             unsafe_storage,
             profile_state_change_driver,
@@ -61,7 +58,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -77,7 +73,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -95,7 +90,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -114,7 +108,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             unsafe_storage,
             RustProfileStateChangeDriver::new(),
@@ -132,7 +125,6 @@ impl Drivers {
             entropy_provider,
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -148,7 +140,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             host_info,
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -164,23 +155,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             logging,
-            RustEventBusDriver::new(),
-            Self::file_system(),
-            EphemeralUnsafeStorage::new(),
-            RustProfileStateChangeDriver::new(),
-            RustArculusCSDKDriver::new(),
-            RustNFCTagDriver::new(),
-        )
-    }
-
-    pub fn with_event_bus(event_bus: Arc<dyn EventBusDriver>) -> Arc<Self> {
-        Drivers::new(
-            RustNetworkingDriver::new(),
-            EphemeralSecureStorage::new(),
-            RustEntropyDriver::new(),
-            RustHostInfoDriver::new(),
-            RustLoggingDriver::new(),
-            event_bus,
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -198,7 +172,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             file_system,
             EphemeralUnsafeStorage::new(),
             RustProfileStateChangeDriver::new(),
@@ -216,7 +189,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             unsafe_storage,
             RustProfileStateChangeDriver::new(),
@@ -234,7 +206,6 @@ impl Drivers {
             RustEntropyDriver::new(),
             RustHostInfoDriver::new(),
             RustLoggingDriver::new(),
-            RustEventBusDriver::new(),
             Self::file_system(),
             EphemeralUnsafeStorage::new(),
             profile_state_change,
@@ -284,13 +255,6 @@ mod tests {
         let d = RustLoggingDriver::new();
         let sut = SUT::with_logging(d.clone());
         assert_eq!(Arc::as_ptr(&sut.logging), Arc::as_ptr(&d));
-    }
-
-    #[test]
-    fn get_event_bus() {
-        let d = RustEventBusDriver::new();
-        let sut = SUT::with_event_bus(d.clone());
-        assert_eq!(Arc::as_ptr(&sut.event_bus), Arc::as_ptr(&d));
     }
 
     #[test]

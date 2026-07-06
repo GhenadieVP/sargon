@@ -12,9 +12,7 @@ pub mod prelude {
     pub use crate::drivers::*;
     pub use prelude::prelude::*;
 
-    pub(crate) use enum_iterator::*;
-    pub(crate) use indexmap::{IndexMap, IndexSet};
-    pub(crate) use itertools::Itertools;
+    pub(crate) use indexmap::IndexMap;
     pub(crate) use std::collections::HashMap;
 }
 

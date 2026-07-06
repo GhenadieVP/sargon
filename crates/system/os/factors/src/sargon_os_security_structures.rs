@@ -185,12 +185,6 @@ impl OsSecurityStructuresQuerying for SargonOS {
             });
         }
 
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::SecurityStructureAdded { id },
-            ))
-            .await;
-
         if !self.profile()?.has_any_main_security_structure() {
             self.set_main_security_structure(id).await?;
         }
@@ -251,18 +245,9 @@ impl OsSecurityStructuresQuerying for SargonOS {
         &self,
         shield_id: SecurityStructureID,
     ) -> Result<()> {
-        let updated_ids = self
+        let _ = self
             .update_profile_with(|p| p.set_main_security_structure(&shield_id))
             .await?;
-
-        // Emit event
-        self.event_bus
-            .emit(EventNotification::profile_modified(
-                EventProfileModified::SecurityStructuresUpdated {
-                    ids: updated_ids,
-                },
-            ))
-            .await;
 
         Ok(())
     }
@@ -506,78 +491,6 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn add_when_failed_to_add_structure_no_security_structure_related_event_is_emitted(
-    ) {
-        // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-
-        // ACT
-        let structure_ids = SecurityStructureOfFactorSourceIDs::sample();
-        let res = os
-            .with_timeout(|x| {
-                x.add_security_structure_of_factor_source_ids(&structure_ids)
-            })
-            .await;
-
-        // ASSERT
-        assert!(res.is_err());
-        assert!(!event_bus_driver
-            .recorded()
-            .iter()
-            .any(|e| e.event.kind() == EventKind::SecurityStructureAdded));
-    }
-
-    #[actix_rt::test]
-    async fn add_structure_emits_event() {
-        // ARRANGE
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-        os.with_timeout(|x| x.new_wallet()).await.unwrap();
-
-        os.with_timeout(|x| x.debug_add_all_sample_hd_factor_sources())
-            .await
-            .unwrap();
-
-        // ACT
-        let structure_ids = SecurityStructureOfFactorSourceIDs::sample();
-        let id = structure_ids.metadata.id;
-        os.with_timeout(|x| {
-            x.add_security_structure_of_factor_source_ids(&structure_ids)
-        })
-        .await
-        .unwrap();
-
-        // ASSERT
-        assert!(event_bus_driver.recorded().iter().any(|e| e.event
-            == Event::ProfileModified {
-                change: EventProfileModified::SecurityStructureAdded { id }
-            }));
-    }
-
-    #[actix_rt::test]
     async fn add_first_structure_sets_it_as_main() {
         // ARRANGE
         let os = SUT::fast_boot().await;
@@ -667,8 +580,7 @@ mod tests {
     #[actix_rt::test]
     async fn set_main_flag() {
         // ARRANGE
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
+        let drivers = Drivers::test();
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
             FactorInstancesCacheClient::in_memory();
@@ -702,8 +614,6 @@ mod tests {
         })
         .await
         .unwrap();
-
-        event_bus_driver.clear_recorded();
 
         // ACT
         assert!(structure_ids_sample.metadata.is_main());
@@ -732,89 +642,6 @@ mod tests {
             .unwrap()
             .metadata
             .is_main());
-
-        let events = event_bus_driver.recorded();
-        let security_structures_updated_event = events
-            .iter()
-            .find(|e| matches!(
-                e.event,
-                Event::ProfileModified {
-                    change: EventProfileModified::SecurityStructuresUpdated { .. }
-                }));
-        let ids = if let Event::ProfileModified {
-            change: EventProfileModified::SecurityStructuresUpdated { ref ids },
-        } = &security_structures_updated_event.unwrap().event
-        {
-            ids
-        } else {
-            panic!("Expected a SecurityStructuresUpdated event");
-        };
-
-        assert_eq!(ids.len(), 2);
-    }
-
-    #[actix_rt::test]
-    async fn set_main_flag_emits_event() {
-        // ARRANGE
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-        os.with_timeout(|x| x.new_wallet()).await.unwrap();
-
-        os.with_timeout(|x| x.debug_add_all_sample_hd_factor_sources())
-            .await
-            .unwrap();
-
-        let structure_ids_sample = SecurityStructureOfFactorSourceIDs::sample();
-        os.with_timeout(|x| {
-            x.add_security_structure_of_factor_source_ids(&structure_ids_sample)
-        })
-        .await
-        .unwrap();
-
-        let structure_ids_sample_other =
-            SecurityStructureOfFactorSourceIDs::sample_other();
-        os.with_timeout(|x| {
-            x.add_security_structure_of_factor_source_ids(
-                &structure_ids_sample_other,
-            )
-        })
-        .await
-        .unwrap();
-
-        event_bus_driver.clear_recorded();
-
-        // ACT
-        os.with_timeout(|x| {
-            x.set_main_security_structure(
-                structure_ids_sample_other.metadata.id(),
-            )
-        })
-        .await
-        .unwrap();
-
-        // ASSERT
-        let events = event_bus_driver.recorded();
-        assert!(events.iter().any(|e| e.event == Event::ProfileSaved),);
-        assert!(events.iter().any(|e| e.event
-            == Event::ProfileModified {
-                change: EventProfileModified::SecurityStructuresUpdated {
-                    ids: vec![
-                        structure_ids_sample.metadata.id(),
-                        structure_ids_sample_other.metadata.id()
-                    ]
-                }
-            }));
     }
 
     #[actix_rt::test]
@@ -1318,8 +1145,7 @@ mod tests {
     #[actix_rt::test]
     async fn rename_structure_success() {
         // ARRANGE
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
+        let drivers = Drivers::test();
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
             FactorInstancesCacheClient::in_memory();
@@ -1383,8 +1209,7 @@ mod tests {
     #[actix_rt::test]
     async fn update_structure_success() {
         // ARRANGE
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
+        let drivers = Drivers::test();
         let mut clients = Clients::new(Bios::new(drivers));
         clients.factor_instances_cache =
             FactorInstancesCacheClient::in_memory();

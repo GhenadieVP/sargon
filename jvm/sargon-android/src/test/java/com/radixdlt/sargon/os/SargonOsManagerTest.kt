@@ -6,7 +6,6 @@ import com.radixdlt.sargon.CommonException
 import com.radixdlt.sargon.Drivers
 import com.radixdlt.sargon.SargonOs
 import com.radixdlt.sargon.os.driver.AndroidEntropyProviderDriver
-import com.radixdlt.sargon.os.driver.AndroidEventBusDriver
 import com.radixdlt.sargon.os.driver.AndroidNetworkingDriver
 import com.radixdlt.sargon.os.driver.AndroidProfileStateChangeDriver
 import com.radixdlt.sargon.os.driver.FakeFileSystemDriver
@@ -35,7 +34,6 @@ import com.radixdlt.sargon.NoPointer
 
 class SargonOsManagerTest {
     private val okHttpClient = mockk<OkHttpClient>()
-    private val eventBusDriver = AndroidEventBusDriver
     private val profileStateChangeDriver = AndroidProfileStateChangeDriver
     private val hostInteractor = FakeHostInteractor()
 
@@ -113,7 +111,6 @@ class SargonOsManagerTest {
             entropyProvider = AndroidEntropyProviderDriver(),
             hostInfo = FakeHostInfoDriver(),
             logging = FakeLoggingDriver(),
-            eventBus = eventBusDriver,
             fileSystem = FakeFileSystemDriver(),
             profileStateChangeDriver = profileStateChangeDriver,
             arculusCsdkDriver = ArculusCsdkDriverImpl(NoPointer),

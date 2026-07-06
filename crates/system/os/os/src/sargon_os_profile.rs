@@ -97,12 +97,6 @@ impl SargonOS {
             imported_id
         );
 
-        self.event_bus
-            .emit(EventNotification::new(Event::ProfileImported {
-                id: imported_id,
-            }))
-            .await;
-
         info!("Successfully imported profile, id: {}", imported_id);
 
         Ok(())
@@ -170,13 +164,7 @@ impl SargonOS {
                 },
                 profile,
             )
-            .await?;
-
-        self.event_bus
-            .emit(EventNotification::new(Event::ProfileSaved))
-            .await;
-
-        Ok(())
+            .await
     }
 
     /// Deletes the profile and all references Device
@@ -278,37 +266,6 @@ mod tests {
 
         // ASSERT
         assert_eq!(os.profile().unwrap().id(), p.id());
-    }
-
-    #[actix_rt::test]
-    async fn test_import_profile_emits_event() {
-        // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-
-        let p = Profile::sample();
-
-        // ACT
-        os.with_timeout(|x| x.import_profile(p.clone()))
-            .await
-            .unwrap();
-
-        // ASSERT
-        assert!(event_bus_driver
-            .recorded()
-            .iter()
-            .any(|e| e.event.kind() == EventKind::ProfileImported));
     }
 
     #[actix_rt::test]

@@ -8,7 +8,6 @@ pub struct Drivers {
     pub entropy_provider: Arc<dyn EntropyProviderDriver>,
     pub host_info: Arc<dyn HostInfoDriver>,
     pub logging: Arc<dyn LoggingDriver>,
-    pub event_bus: Arc<dyn EventBusDriver>,
     pub file_system: Arc<dyn FileSystemDriver>,
     pub unsafe_storage: Arc<dyn UnsafeStorageDriver>,
     pub profile_state_change_driver: Arc<dyn ProfileStateChangeDriver>,
@@ -26,7 +25,6 @@ impl Drivers {
         entropy_provider: Arc<dyn EntropyProviderDriver>,
         host_info: Arc<dyn HostInfoDriver>,
         logging: Arc<dyn LoggingDriver>,
-        event_bus: Arc<dyn EventBusDriver>,
         file_system: Arc<dyn FileSystemDriver>,
         unsafe_storage: Arc<dyn UnsafeStorageDriver>,
         profile_state_change_driver: Arc<dyn ProfileStateChangeDriver>,
@@ -39,7 +37,6 @@ impl Drivers {
             entropy_provider,
             host_info,
             logging,
-            event_bus,
             file_system,
             unsafe_storage,
             profile_state_change_driver,
@@ -66,9 +63,6 @@ impl From<Drivers> for InternalDrivers {
             }),
             logging: Arc::new(LoggingDriverAdapter {
                 wrapped: val.logging,
-            }),
-            event_bus: Arc::new(EventBusDriverAdapter {
-                wrapped: val.event_bus,
             }),
             file_system: Arc::new(FileSystemDriverAdapter {
                 wrapped: val.file_system,

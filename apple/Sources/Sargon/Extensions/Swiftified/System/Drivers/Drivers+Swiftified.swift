@@ -58,7 +58,6 @@ extension Drivers {
 			entropyProvider: .shared,
 			hostInfo: hostInfo,
 			logging: .shared,
-			eventBus: .shared,
 			fileSystem: .shared,
 			unsafeStorage: unsafeStorage,
 			profileStateChangeDriver: .shared,

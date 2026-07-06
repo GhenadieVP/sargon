@@ -27,7 +27,6 @@ import com.radixdlt.sargon.SignResponseOfTransactionIntentHash
 import com.radixdlt.sargon.SpotCheckResponse
 import com.radixdlt.sargon.android.BuildConfig
 import com.radixdlt.sargon.os.SargonOsManager
-import com.radixdlt.sargon.os.driver.AndroidEventBusDriver
 import com.radixdlt.sargon.os.driver.AndroidProfileStateChangeDriver
 import com.radixdlt.sargon.os.driver.BiometricsHandler
 import com.radixdlt.sargon.os.from
@@ -152,10 +151,6 @@ object ApplicationModule {
 
     @Provides
     @Singleton
-    fun provideEventBusDriver(): AndroidEventBusDriver = AndroidEventBusDriver
-
-    @Provides
-    @Singleton
     fun provideProfileStateChangeDriver(): AndroidProfileStateChangeDriver =
         AndroidProfileStateChangeDriver
 
@@ -192,7 +187,6 @@ object ApplicationModule {
     fun provideBios(
         @ApplicationContext context: Context,
         httpClient: OkHttpClient,
-        eventBusDriver: AndroidEventBusDriver,
         profileStateChangeDriver: AndroidProfileStateChangeDriver,
         biometricsHandler: BiometricsHandler,
         @EncryptedPreferences encryptedPreferences: DataStore<Preferences>,
@@ -205,7 +199,6 @@ object ApplicationModule {
         encryptedPreferencesDataStore = encryptedPreferences,
         preferencesDatastore = preferences,
         deviceInfoDatastore = deviceInfoPreferences,
-        eventBusDriver = eventBusDriver,
         profileStateChangeDriver = profileStateChangeDriver,
         arculusCsdkDriver = FakeArculusCsdkDriver(),
         nfcTagDriver = FakeNfcTagDriver()

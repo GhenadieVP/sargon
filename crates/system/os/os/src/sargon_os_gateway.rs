@@ -69,17 +69,6 @@ impl SargonOS {
             })
             .await?;
 
-        match outcome {
-            ChangeGatewayOutcome::DidChange { is_new } => {
-                self.event_bus
-                    .emit(EventNotification::new(
-                        Event::GatewayChangedCurrent { to, is_new },
-                    ))
-                    .await;
-            }
-            ChangeGatewayOutcome::NoChange => {}
-        };
-
         debug!("Change current gateway outcome: {:?}", &outcome);
 
         Ok(outcome)
@@ -153,63 +142,5 @@ mod tests {
 
         // ASSERT
         assert_eq!(os.current_network_id(), NetworkID::Stokenet)
-    }
-
-    #[actix_rt::test]
-    async fn test_change_gateway_emits_event() {
-        // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-        os.with_timeout(|x| x.new_wallet()).await.unwrap();
-
-        // ACT
-        os.with_timeout(|x| x.change_current_gateway(Gateway::stokenet()))
-            .await
-            .unwrap();
-
-        // ASSERT
-        assert!(event_bus_driver
-            .recorded()
-            .iter()
-            .any(|e| e.event.kind() == EventKind::GatewayChangedCurrent));
-    }
-
-    #[actix_rt::test]
-    async fn test_change_to_current_gateway_does_not_emits_event() {
-        // ARRANGE (and ACT)
-        let event_bus_driver = RustEventBusDriver::new();
-        let drivers = Drivers::with_event_bus(event_bus_driver.clone());
-        let mut clients = Clients::new(Bios::new(drivers));
-        clients.factor_instances_cache =
-            FactorInstancesCacheClient::in_memory();
-        let interactors = Interactors::new_from_clients(&clients);
-        let os = timeout(
-            SARGON_OS_TEST_MAX_ASYNC_DURATION,
-            SUT::boot_with_clients_and_interactor(clients, interactors),
-        )
-        .await
-        .unwrap();
-        os.with_timeout(|x| x.new_wallet()).await.unwrap();
-
-        // ACT
-        os.with_timeout(|x| x.change_current_gateway(Gateway::mainnet()))
-            .await
-            .unwrap();
-
-        // ASSERT
-        assert!(!event_bus_driver
-            .recorded()
-            .iter()
-            .any(|e| e.event.kind() == EventKind::GatewayChangedCurrent));
     }
 }
